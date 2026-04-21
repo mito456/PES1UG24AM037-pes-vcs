@@ -11,6 +11,7 @@
 // Phase 3: implemented index_save with atomic write
 // Phase 3: implemented index_add for staging files
 // Phase 3: added file metadata tracking (mode, mtime, size)
+// Phase 3 complete: staging area functional
 // ─── PROVIDED ────────────────────────────────────────────────
 
 IndexEntry* index_find(Index *index, const char *path) {
