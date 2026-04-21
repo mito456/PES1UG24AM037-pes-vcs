@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <dirent.h>
 // Phase 3: implemented index_save with atomic write
+// Phase 3: implemented index_add for staging files
 // ─── PROVIDED ────────────────────────────────────────────────
 
 IndexEntry* index_find(Index *index, const char *path) {
