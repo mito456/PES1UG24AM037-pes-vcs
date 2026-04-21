@@ -375,8 +375,13 @@ The test program verifies:
 - Integrity checking (detects corrupted objects)
 
 **📸 Screenshot 1A:** Output of `./test_objects` showing all tests passing.
+<img width="1127" height="328" alt="Screenshot from 2026-04-21 10-11-54" src="https://github.com/user-attachments/assets/6644c615-ef7b-4fa8-8524-28b2649102b3" />
+
 
 **📸 Screenshot 1B:** `find .pes/objects -type f` showing the sharded directory structure.
+<img width="1127" height="328" alt="Screenshot from 2026-04-21 10-12-09" src="https://github.com/user-attachments/assets/75478686-bb82-43a0-abdc-5f8fe05137da" />
+
+
 
 ---
 
@@ -407,8 +412,13 @@ The test program verifies:
 - Deterministic serialization (same entries in any order → identical output)
 
 **📸 Screenshot 2A:** Output of `./test_tree` showing all tests passing.
+S<img width="1127" height="174" alt="Screenshot from 2026-04-21 10-33-24" src="https://github.com/user-attachments/assets/40cae588-0e7e-4c16-b977-31d0d51bf257" />
+
+
 
 **📸 Screenshot 2B:** Pick a tree object from `find .pes/objects -type f` and run `xxd .pes/objects/XX/YYY... | head -20` to show the raw binary format.
+<img width="1594" height="76" alt="image" src="https://github.com/user-attachments/assets/1c09ee83-2b76-4cb8-8ebb-d668a7e12ab1" />
+
 
 ---
 
@@ -465,8 +475,12 @@ cat .pes/index    # Human-readable text format
 ```
 
 **📸 Screenshot 3A:** Run `./pes init`, `./pes add file1.txt file2.txt`, `./pes status` — show the output.
+<img width="1613" height="736" alt="image" src="https://github.com/user-attachments/assets/66b753b1-c353-405e-b9ee-a2b94c8ed857" />
+
 
 **📸 Screenshot 3B:** `cat .pes/index` showing the text-format index with your entries.
+<img width="1024" height="77" alt="image" src="https://github.com/user-attachments/assets/d1437825-cba9-4939-8e7d-91028f006e36" />
+
 
 ---
 
@@ -516,10 +530,17 @@ make test-integration
 ```
 
 **📸 Screenshot 4A:** Output of `./pes log` showing three commits with hashes, authors, timestamps, and messages.
+<img width="1018" height="186" alt="image" src="https://github.com/user-attachments/assets/91242614-a9a3-4d9c-9ff0-7dc06f60188a" />
+
 
 **📸 Screenshot 4B:** `find .pes -type f | sort` showing object store growth after three commits.
+<img width="1017" height="317" alt="image" src="https://github.com/user-attachments/assets/53b9098c-9a05-4422-9c9e-b2965488e04b" />
+
+
 
 **📸 Screenshot 4C:** `cat .pes/refs/heads/main` and `cat .pes/HEAD` showing the reference chain.
+<img width="1025" height="101" alt="image" src="https://github.com/user-attachments/assets/fbe87f25-e659-4efb-8d47-5e71e67e0d67" />
+
 
 ---
 
@@ -530,16 +551,97 @@ The following questions cover filesystem concepts beyond the implementation scop
 ### Branching and Checkout
 
 **Q5.1:** A branch in Git is just a file in `.git/refs/heads/` containing a commit hash. Creating a branch is creating a file. Given this, how would you implement `pes checkout <branch>` — what files need to change in `.pes/`, and what must happen to the working directory? What makes this operation complex?
+A branch in PES is stored as a file in .pes/refs/heads/ containing a commit hash.
+To implement pes checkout <branch>, the following steps are required:
+
+Update .pes/HEAD to point to the new branch:
+
+ref: refs/heads/<branch>
+Read the commit hash from .pes/refs/heads/<branch>
+Load the corresponding commit object and extract its tree
+Reconstruct the working directory from the tree
+Update .pes/index to match the checked-out files
+
+This operation is complex because:
+
+It must recreate directory structures from tree objects
+It must delete/modify files safely
+It must not overwrite uncommitted changes
+It involves coordination between object store, index, and working directory
 
 **Q5.2:** When switching branches, the working directory must be updated to match the target branch's tree. If the user has uncommitted changes to a tracked file, and that file differs between branches, checkout must refuse. Describe how you would detect this "dirty working directory" conflict using only the index and the object store.
+To detect uncommitted changes:
+
+For each file in the index:
+Use stat() to get file size and modification time
+Compare with values stored in index
+If mismatch is found → file is modified
+
+If:
+
+file is modified locally
+AND
+file differs in target branch
+
 
 **Q5.3:** "Detached HEAD" means HEAD contains a commit hash directly instead of a branch reference. What happens if you make commits in this state? How could a user recover those commits?
+Detached HEAD means HEAD directly stores a commit hash instead of pointing to a branch.
+
+When committing in this state:
+
+New commits are created
+No branch points to them
+They can become unreachable
+
+Recovery:
+
+Create a new branch pointing to that commit:
+
+echo <commit_hash> > .pes/refs/heads/new_branch
+
+This preserves the commits.
 
 ### Garbage Collection and Space Reclamation
 
 **Q6.1:** Over time, the object store accumulates unreachable objects — blobs, trees, or commits that no branch points to (directly or transitively). Describe an algorithm to find and delete these objects. What data structure would you use to track "reachable" hashes efficiently? For a repository with 100,000 commits and 50 branches, estimate how many objects you'd need to visit.
+To remove unreachable objects:
+
+Algorithm:
+
+Start from all branch heads (.pes/refs/heads/*)
+Traverse:
+commits → parent + tree
+trees → blobs and subtrees
+Mark all visited objects as reachable
+Delete objects not in this set
+
+Data structure:
+
+Use a hash set for fast lookup
+
+Estimation:
+
+For 100,000 commits:
+~100k commits
+~100k trees
+~100k–300k blobs
+Total ≈ 300k–500k objects
 
 **Q6.2:** Why is it dangerous to run garbage collection concurrently with a commit operation? Describe a race condition where GC could delete an object that a concurrent commit is about to reference. How does Git's real GC avoid this?
+Running garbage collection during commit is dangerous.
+
+Example:
+
+Commit creates new object
+Before it is referenced, GC runs
+GC deletes it (thinks it’s unused)
+Commit fails → broken repository
+
+Git avoids this by:
+
+Using file locks
+Only deleting old unreachable objects
+Using atomic operation
 
 ---
 
