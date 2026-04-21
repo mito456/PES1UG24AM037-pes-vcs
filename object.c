@@ -1,4 +1,5 @@
 // object.c — Content-addressable object store
+// Phase 1: atomic write using temp file and rename
 //
 // Every piece of data (file contents, directory listings, commits) is stored
 // as an "object" named by its SHA-256 hash. Objects are stored under
