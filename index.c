@@ -8,7 +8,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <dirent.h>
-
+// Phase 3: implemented index_save with atomic write
 // ─── PROVIDED ────────────────────────────────────────────────
 
 IndexEntry* index_find(Index *index, const char *path) {
