@@ -1,5 +1,6 @@
 // tree.c — Tree object serialization and construction
 //
+// Phase 2: stored tree object using object_write
 // Phase 2: mapping index entries to tree entries
 // Phase 2: extracted filenames from paths
 // PROVIDED functions: get_file_mode, tree_parse, tree_serialize
