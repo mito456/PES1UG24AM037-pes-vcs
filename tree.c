@@ -37,7 +37,7 @@ uint32_t get_file_mode(const char *path) {
     if (st.st_mode & S_IXUSR) return MODE_EXEC;
     return MODE_FILE;
 }
-
+// Phase 2: stored tree object using object_write
 // Parse binary tree data into a Tree struct safely.
 // Returns 0 on success, -1 on parse error.
 int tree_parse(const void *data, size_t len, Tree *tree_out) {
