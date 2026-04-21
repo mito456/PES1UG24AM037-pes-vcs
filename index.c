@@ -10,6 +10,7 @@
 #include <dirent.h>
 // Phase 3: implemented index_save with atomic write
 // Phase 3: implemented index_add for staging files
+// Phase 3: added file metadata tracking (mode, mtime, size)
 // ─── PROVIDED ────────────────────────────────────────────────
 
 IndexEntry* index_find(Index *index, const char *path) {
